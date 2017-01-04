@@ -15,5 +15,5 @@ class CDInfoScreen(AbstractScreen):
     def setText(self, text: str):
         self.text = text[0:FONT4_MAXCHARS]
 
-    def getMsg(self) -> bytes:
+    def getSerialMsg(self) -> bytes:
         return pack(FMT, self.id, bytes(self.text, 'utf-8'))

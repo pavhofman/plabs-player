@@ -1,9 +1,7 @@
 from collections import deque
 from struct import pack
 
-from unidecode import unidecode
-
-from abstractscreen import AbstractScreen, FONT2_MAXCHARS, chunkstring, FONT2_MAXLINES
+from abstractscreen import AbstractScreen, FONT2_MAXCHARS, FONT2_MAXLINES
 
 ID = 1
 # ID line1 line2 line3
@@ -20,6 +18,6 @@ class ErrorScreen(AbstractScreen):
     def setText(self, msg: str):
         self._setLines(msg, self.lines, FONT2_MAXCHARS, FONT2_MAXLINES)
 
-    def getMsg(self) -> bytes:
+    def getSerialMsg(self) -> bytes:
         return pack(FMT, self.id, bytes(self.lines[0], 'utf-8'), bytes(self.lines[1], 'utf-8'),
                     bytes(self.lines[2], 'utf-8'))

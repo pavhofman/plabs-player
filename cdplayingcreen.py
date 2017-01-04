@@ -19,5 +19,5 @@ class CDPlayingScreen(AbstractScreen):
     def setTrackNb(self, trackNb: int):
         self.trackNb = trackNb
 
-    def getMsg(self) -> bytes:
+    def getSerialMsg(self) -> bytes:
         return pack(FMT, self.id, self.trackNb, self.tracks, self.icon)

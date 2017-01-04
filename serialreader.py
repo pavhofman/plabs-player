@@ -1,53 +1,27 @@
 import logging
-import time
-from queue import Queue
-from threading import Thread, Event
 
 from serial import Serial
 
-from abstractplayer import AbstractPlayer
+from abstractreader import AbstractReader, INPUT_VOLUME_ID, INPUT_BUTTON_ID, INPUT_LOG_ID
 from buttoncommand import ButtonCommand
-from player import Player
 from volumecommand import VolumeCommand
 
 # defined in arduino!
 FRAME_START = 254
 FRAME_STOP = 253
-INPUT_VOLUME_ID = b'V'
-INPUT_BUTTON_ID = b'B'
-INPUT_LOG_ID = b'L'
 
 
-class SerialReader(Thread):
+class SerialReader(AbstractReader):
     def __init__(self, ser: Serial):
         # call the thread class
-        super(SerialReader, self).__init__()
+        super().__init__()
         self.__serial = ser
-        self.__event = Event()
-        # command queue - contains XXXCommands
-        self.__receiveQ = Queue()
-        self.setDaemon(True)
+        self.__serial.flushInput()
 
     def stop(self):
-        self.__event.set()
+        super().stop()
         if self.__serial.isOpen():
             self.__serial.flushInput()
-            self.__serial.close()
-
-    def stopped(self) -> bool:
-        return self.__event.isSet()
-
-    def run(self):
-
-        try:
-            self.__serial.flushInput()  # flush input buffer
-            while not self.stopped():
-                self.readFrame()
-            self.__serial.close()
-
-        except Exception as e:
-            print("error communicating...: ")
-            print(e)
             self.__serial.close()
 
     def readFrame(self):
@@ -68,7 +42,7 @@ class SerialReader(Thread):
         frameStop = self.__serial.read(1)
         if frameStop[0] == FRAME_STOP:
             # OK
-            self.__receiveQ.put(VolumeCommand(volume[0]))
+            self.receiveQ.put(VolumeCommand(volume[0]))
         else:
             logging.warning("Skipping unknown FRAME_STOP: " + str(frameStop[0]))
 
@@ -77,7 +51,7 @@ class SerialReader(Thread):
         frameStop = self.__serial.read(1)
         if frameStop[0] == FRAME_STOP:
             # OK
-            self.__receiveQ.put(ButtonCommand(button[0]))
+            self.receiveQ.put(ButtonCommand(button[0]))
         else:
             logging.warning("Skipping unknown FRAME_STOP: " + str(frameStop[0]))
 
@@ -96,15 +70,10 @@ class SerialReader(Thread):
                 break
             try:
                 msg += character.decode('utf-8')
-            except Exception as e:
+            except Exception:
                 logging.error("Received non-ascii character " + str(character) + "in log message " + msg)
                 error = True
                 break
         if not error:
             # not using the queue, logging directly
             logging.debug("Arduino log: " + msg)
-
-    def processCommand(self, player: AbstractPlayer):
-        command = self.__receiveQ.get()
-        command.do(player)
-        self.__receiveQ.task_done()

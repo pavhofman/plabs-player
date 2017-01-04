@@ -6,7 +6,7 @@ BAUDRATE = 4800
 DEV_CDROM = '/dev/cdrom'
 
 ALSA_CARD_INDEX = 1
-AUDIO_DEV = "alsa/plughw:CARD=SB,DEV=0"
+AUDIO_DEV = "alsa/plughw:CARD=PCH,DEV=0"
 
 # ext config
 FLASH_LABEL = "RADIO"
@@ -22,3 +22,5 @@ VOLUME_PROPERTY = "ao-volume"
 
 
 DST_IFS_DIR = "/tmp/interfaces.d"
+
+USE_SERIAL = False

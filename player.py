@@ -5,7 +5,6 @@ import pyudev
 from pyudev import Devices
 from pyudev import Monitor
 from pyudev import MonitorObserver
-from serial import Serial
 
 from abstractplayer import AbstractPlayer
 from buttoncommand import SWITCH_BTN, PLAY_PAUSE_BTN, UP_BTN, DOWN_BTN
@@ -49,10 +48,10 @@ class Player(AbstractPlayer):
     # -------------------------------------------------------------------------
     # Initialization.
     # -------------------------------------------------------------------------
-    def __init__(self, ser: Serial):
+    def __init__(self, display: Display):
         self.__mixer = Mixer()
         self.__stateFile = StateFile()
-        self.__display = Display(ser)
+        self.__display = display
         self.__showInitInfo()
         self.__cdIsOver = False
 

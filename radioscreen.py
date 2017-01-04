@@ -33,6 +33,6 @@ class RadioScreen(AbstractScreen):
         self._setLines(title, self.titleLines, FONT2_MAXCHARS, TITLE_MAXLINES)
         return self
 
-    def getMsg(self) -> bytes:
+    def getSerialMsg(self) -> bytes:
         return pack(FMT, self.id, bytes(self.stationLines[0], 'utf-8'), bytes(self.stationLines[1], 'utf-8'),
                     bytes(self.titleLines[0], 'utf-8'), bytes(self.titleLines[1], 'utf-8'), self.icon, self.cdAvailable)

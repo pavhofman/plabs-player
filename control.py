@@ -14,7 +14,9 @@ import sys
 
 import serial
 
-from config import SERIAL_PORT, BAUDRATE
+from config import SERIAL_PORT, BAUDRATE, USE_SERIAL
+from display import Display
+from inputreader import InputReader
 from player import Player
 from serialreader import SerialReader
 
@@ -64,13 +66,20 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, exitHandler)
     signal.signal(signal.SIGTERM, exitHandler)
     try:
-        ser = getSerial()
-        serial.time.sleep(2)
-        reader = SerialReader(ser)
-        reader.start()
+        reader = None
+        display = None
+        if (USE_SERIAL):
+            ser = getSerial()
+            serial.time.sleep(2)
+            reader = SerialReader(ser)
+            display = Display(ser)
+        else:
+            reader = InputReader()
+            display = Display()
 
+        reader.start()
         # Open the video player and load a file.
-        player = Player(ser)
+        player = Player(display)
 
         while True:
             reader.processCommand(player)

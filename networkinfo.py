@@ -113,14 +113,26 @@ def get_network_interfaces():
 
 
 class NetworkInfo():
-    def __init__(self, ifName: str, addr: str, ssid: str):
+    def __init__(self, ifName: str, addr: str, ssid: str, link: str):
         self.ifName = ifName
         self.addr = addr
         self.ssid = ssid
+        self.link = link
 
 
-def getSSID():
+def getSSID() -> bytes:
     return subprocess.check_output([IWGETID_CMD, "-r"])
+
+
+def getLinkQuality() -> str:
+    with open("/proc/net/wireless", "r") as fh:
+        for line in fh:
+            line = line.rstrip()
+            if line.startswith("wlan0"):
+                parts = line.split()
+                if len(parts) > 3:
+                    return parts[2]
+    return None
 
 
 def getNetworkInfo() -> NetworkInfo:
@@ -135,5 +147,6 @@ def getNetworkInfo() -> NetworkInfo:
                     ssidBytes = getSSID()
                     if ssidBytes is not None:
                         ssid = ssidBytes.decode("utf-8").strip()
-                return NetworkInfo(ifName, addr, ssid)
+                        link = getLinkQuality()
+                return NetworkInfo(ifName, addr, ssid, link)
     return None

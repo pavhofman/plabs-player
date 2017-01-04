@@ -1,6 +1,7 @@
 # maximum line length on display (font 2)
 from collections import deque
 
+import jsonpickle
 from unidecode import unidecode
 
 FONT2_MAXCHARS = 20
@@ -46,7 +47,7 @@ class AbstractScreen:
     def setRadioTitle(self, title: str):
         raise NotImplementedError()
 
-    def getMsg(self) -> bytes:
+    def getSerialMsg(self) -> bytes:
         raise NotImplementedError()
 
     def copyFrom(self, screen: 'AbstractScreen'):
@@ -57,7 +58,7 @@ class AbstractScreen:
         # replacing utf-8 chars with ascii
         msg = unidecode(msg)
         lines.clear()
-        #split, trim, copy first maxLines to lines
+        # split, trim, copy first maxLines to lines
         index = 0
         for chunk in chunkstring(msg, maxChars):
             lines.append(chunk.strip())
@@ -69,3 +70,8 @@ class AbstractScreen:
         while len(lines) < maxLines:
             lines.append('')
         return self
+
+    def toString(self) -> str:
+        jsonStr = jsonpickle.encode(self)
+        return jsonStr
+        # return json.dumps(json.loads(jsonStr), sort_keys=True, indent=4)

@@ -6,6 +6,7 @@ from cdinfoscreen import CDInfoScreen
 from cdplayingcreen import CDPlayingScreen
 from errorscreen import ErrorScreen
 from infoscreen import InfoScreen
+from outputwriter import OutputWriter
 from radioscreen import RadioScreen
 from serialwriter import SerialWriter
 from volumescreen import VolumeScreen
@@ -35,10 +36,12 @@ VOLUME_SCR = VolumeScreen()
 
 
 class Display:
-    def __init__(self, ser):
+    def __init__(self, ser=None):
         self.__timer = None
-
-        self.__writer = SerialWriter(ser)
+        if ser is not None:
+            self.__writer = SerialWriter(ser)
+        else:
+            self.__writer = OutputWriter()
         self.__writer.start()
         time.sleep(.1)
         self.__screen = INFO_SCR
@@ -71,7 +74,7 @@ class Display:
         # print("Showing screen " + str(self.__screen))
         # print("has cd: " + str(self.__screen.cdAvailable))
         # print("")
-        self.__writer.send(self.__screen.getMsg())
+        self.__writer.send(self.__screen)
 
     def showCDInfo(self, text: str):
         CD_INFO_SCR.copyFrom(self.__screen)
@@ -100,7 +103,7 @@ class Display:
         # print("")
         VOLUME_SCR.setVolume(volume)
         # displaying without changing the main screen
-        self.__writer.send(VOLUME_SCR.getMsg())
+        self.__writer.send(VOLUME_SCR)
 
     def __activate_timer(self):
         if self.__timer is None:

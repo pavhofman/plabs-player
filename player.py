@@ -68,7 +68,9 @@ class Player(AbstractPlayer):
                 if nInfo is not None:
                     msg = "IF: " + nInfo.ifName
                     msg += " " + "addr: " + nInfo.addr
-                    msg += " " + "ssid: " + nInfo.ssid
+                    msg += " " + "ssid: " + str(nInfo.ssid)
+                    if nInfo.link:
+                        msg += " " + "link: " + str(nInfo.link) + "/70"
                     self.__display.showInfo(msg)
                     # waiting to make the message readable
                     time.sleep(1)

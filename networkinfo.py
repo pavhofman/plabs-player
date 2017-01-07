@@ -11,6 +11,7 @@ from ctypes import (
 from socket import AF_INET, AF_INET6, inet_ntop
 
 IWGETID_CMD = "/sbin/iwgetid"
+WIRELESS_PROC_FILE = "/proc/net/wireless"
 
 
 class struct_sockaddr(Structure):
@@ -125,10 +126,10 @@ def getSSID() -> bytes:
 
 
 def getLinkQuality() -> str:
-    with open("/proc/net/wireless", "r") as fh:
+    with open(WIRELESS_PROC_FILE, "r") as fh:
         for line in fh:
-            line = line.rstrip()
-            if line.startswith("wlan0"):
+            line = line.strip()
+            if line.startswith("wlan"):
                 parts = line.split()
                 if len(parts) > 3:
                     return parts[2]
@@ -142,6 +143,7 @@ def getNetworkInfo() -> NetworkInfo:
         if ifName != "lo":
             addr = ni.addresses.get(AF_INET)
             ssid = None
+            link = None
             if addr is not None and not addr.startswith("10.0.0.10"):
                 if not ifName.startswith('eth'):
                     ssidBytes = getSSID()

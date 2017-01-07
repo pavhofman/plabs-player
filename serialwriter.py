@@ -18,5 +18,5 @@ class SerialWriter(AbstractWriter):
     def handleItem(self, item: bytes):
         self.__serial.write(item)
 
-    def send(self, screen: 'AbstractScreen'):
+    def output(self, screen: 'AbstractScreen'):
         self.sendQ.put(screen.getSerialMsg())

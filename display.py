@@ -74,7 +74,7 @@ class Display:
         # print("Showing screen " + str(self.__screen))
         # print("has cd: " + str(self.__screen.cdAvailable))
         # print("")
-        self.__writer.send(self.__screen)
+        self.__writer.output(self.__screen)
 
     def showCDInfo(self, text: str):
         CD_INFO_SCR.copyFrom(self.__screen)
@@ -103,7 +103,7 @@ class Display:
         # print("")
         VOLUME_SCR.setVolume(volume)
         # displaying without changing the main screen
-        self.__writer.send(VOLUME_SCR)
+        self.__writer.output(VOLUME_SCR)
 
     def __activate_timer(self):
         if self.__timer is None:

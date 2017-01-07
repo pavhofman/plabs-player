@@ -102,7 +102,8 @@ class Player(AbstractPlayer):
 
     def __setMPVVolume(self, volume):
         if volume < MPV_VOLUME_THRESHOLD:
-            self.__mpv.setVolume(volume * (100 / MPV_VOLUME_THRESHOLD))
+            mpvVolume = volume * (100 / MPV_VOLUME_THRESHOLD)
+            self.__mpv.setVolume(mpvVolume)
         else:
             # full volume
             self.__mpv.setVolume(100)

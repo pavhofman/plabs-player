@@ -2,6 +2,7 @@ from serial import Serial
 
 from abstractscreen import AbstractScreen
 from abstractwriter import AbstractWriter
+from serialreader import FRAME_STOP, FRAME_START
 
 
 class SerialWriter(AbstractWriter):
@@ -16,7 +17,12 @@ class SerialWriter(AbstractWriter):
             self.__serial.close()
 
     def handleItem(self, item: bytes):
-        self.__serial.write(item)
+        # wrapping the item with FRAME_START/STOP
+        outputBytes = bytearray()
+        outputBytes.append(FRAME_START)
+        outputBytes.extend(item)
+        outputBytes.append(FRAME_STOP)
+        self.__serial.write(outputBytes)
 
     def output(self, screen: 'AbstractScreen'):
         self.sendQ.put(screen.getSerialMsg())

@@ -3,24 +3,35 @@
 
 TFT_ST7735 tft = TFT_ST7735();  // Invoke library, pins defined in User_Setup.h
 
+// period in ms to check volume value (and send over serial if change detected)
+#define VOLUME_CHECK_PERIOD 100
+
+// first byte of incoming frame
 #define FRAME_START 254
+// last byte of incoming frame
 #define FRAME_END 253
 
-// input params
-#define ERROR_ID 1
-#define INFO_ID 2
-#define VOLUME_ID 3
-#define CD_INFO_ID 4
-#define CD_PLAYING_ID 5
-#define RADIO_ID 6
+// time limit in millis for reception of the whole screen structure
+// is used to skip corrupted incoming data
+#define SERIAL_TIMEOUT 500
+
+// Command IDs
+#define ERROR_SCR_ID 1
+#define INFO_SCR_ID 2
+#define VOLUME_SCR_ID 3
+#define CD_INFO_SCR_ID 4
+#define CD_PLAYING_SCR_ID 5
+#define RADIO_SCR_ID 6
 
 // current screen
 byte screenID = 0;
 
+// play control icons
 #define NO_ICON 0
 #define PLAY_ICON 1
 #define PAUSE_ICON 2
 
+// source icons
 #define NO_SOURCE 0
 #define RADIO_SOURCE 1
 #define CD_SOURCE 2
@@ -29,6 +40,7 @@ byte selectedSource = NO_SOURCE;
 byte cdAvailable = 0;
 byte sourcesDrawn = false;
 
+// screen colors
 #define RADIO_COLOR TFT_GREEN
 #define CD_COLOR TFT_ORANGE
 #define NO_CD_COLOR TFT_DARKGREY
@@ -64,7 +76,7 @@ byte sourcesDrawn = false;
 #define HEIGHT 128
 
 // output consts
-#define OUT_VOLUME_ID 'V'
+#define OUT_VOLUME_SCR_ID 'V'
 #define OUT_BUTTON_ID 'B'
 #define OUT_LOG_ID 'L'
 
@@ -76,14 +88,29 @@ uint16_t upDownButtonsColor = BACKGROUND;
 
 uint16_t mainScreenColor = RADIO_COLOR;
 
+// false until having received first complete screen info via serial
 bool controllerRunning = false;
 
+/********** LOGGING ******/
+/**
+   Send string over serial as log message
+*/
 void sendLog(char* msg) {
   Serial.write(FRAME_START);
   Serial.write(OUT_LOG_ID);
   Serial.print(msg);
   Serial.write(FRAME_END);
 }
+
+/**
+   Log int over serial as char* message
+*/
+void logInt(int value) {
+  char buffer[7];
+  itoa(value, buffer, 10);
+  sendLog(buffer);
+}
+
 
 /********** BUTTONS OUTPUT ******/
 // pins for button 1 2 3 4
@@ -123,9 +150,9 @@ void sendButton(byte buttonIdx) {
 int volumeAnalogValue = 0;
 byte volumeValue = 0;
 
+// next time threshold for checking volume
 static unsigned long volumeWaitMillis;
 
-#define VOLUME_CHECK_PERIOD 100
 
 byte readVolume() {
   int newValue = analogRead(A0);
@@ -142,7 +169,7 @@ void checkSendVolume() {
     if (newVolume != volumeValue) {
       volumeValue = newVolume;
       Serial.write(FRAME_START);
-      Serial.write(OUT_VOLUME_ID);
+      Serial.write(OUT_VOLUME_SCR_ID);
       Serial.write(volumeValue);
       Serial.write(FRAME_END);
     }
@@ -154,25 +181,26 @@ void checkSendVolume() {
 
 /**
    Reading from serial structure to buf, size bytes
+   checking START_FRAME, size, STOP_FRAME
+   return: FALSE if all expected bytes not received within SERIAL_TIMEOUT or the (size+1)'th byte is not FRAME_END
 */
-void readStruct(char* buf, int size) {
-  /*
-    Serial.print(OUT_LOG_ID);
-    Serial.print("waiting for bytes: ");
-    Serial.println(size);
-  */
-  int i = 0;
-  while (i < size) {
-    // waiting for reception
-    while (Serial.available() == 0) {
-    }
-    buf[i++] = Serial.read();
+bool readStruct(char* buf, int size) {
+  // receiving size bytes + STOP_FRAME
+  byte readCount = Serial.readBytes(buf, size);
+  if (readCount != size) {
+    // timeout, did not receive enough bytes, error!
+    return false;
   }
-  /*
-    Serial.print(OUT_LOG_ID);
-    Serial.print("received bytes: ");
-    Serial.println(size);
-  */
+  // checking for STOP_FRAME
+  byte stopFrame;
+  readCount = Serial.readBytes(&stopFrame, 1);
+  if (readCount < 1) {
+    // timeout, did not receive enough bytes, error!
+    return false;
+  }
+  // checking STOP FRAME
+  // if different -> error!
+  return (stopFrame == FRAME_END);
 }
 
 void clearWholeScreen() {
@@ -182,6 +210,7 @@ void clearWholeScreen() {
   selectedSource = NO_SOURCE;
   sourcesDrawn = false;
 }
+
 void drawUpDown(uint16_t color) {
   if (color != upDownButtonsColor) {
     tft.fillTriangle(145, 10, 150, 3, 155, 10, color);
@@ -294,7 +323,7 @@ void drawCD(byte selected, byte isAvailable) {
 }
 
 void clearPanel() {
-  if (screenID == ERROR_ID)
+  if (screenID == ERROR_SCR_ID)
     // this screen uses whole area
     clearWholeScreen();
   else
@@ -316,31 +345,34 @@ typedef struct volume_t {
 
 volume_t volumeData = {0, 0, 0};
 
-void handleVolumeScreen() {
+bool handleVolumeScreen() {
   volume_t newVolumeData;
-  readStruct((char*) &newVolumeData, sizeof(volume_t));
-  /*
-    Serial.print(OUT_LOG_ID);
-    Serial.print("Volumedata: volume: ");
-    Serial.println(newVolumeData.volume);
-    Serial.print(OUT_LOG_ID);
-    Serial.print("icon: ");
-    Serial.println(newVolumeData.icon);
-    Serial.print(OUT_LOG_ID);
-    Serial.print("cdAvailable: ");
-    Serial.println(newVolumeData.cdAvailable);
-  */
-  showVolumeScreen(newVolumeData);
+  if (readStruct((char*) &newVolumeData, sizeof(volume_t))) {
+    /*
+      Serial.print(OUT_LOG_ID);
+      Serial.print("Volumedata: volume: ");
+      Serial.println(newVolumeData.volume);
+      Serial.print(OUT_LOG_ID);
+      Serial.print("icon: ");
+      Serial.println(newVolumeData.icon);
+      Serial.print(OUT_LOG_ID);
+      Serial.print("cdAvailable: ");
+      Serial.println(newVolumeData.cdAvailable);
+    */
+    showVolumeScreen(newVolumeData);
+    return true;
+  } else
+    return false;
 }
 
 void showVolumeScreen(struct volume_t newVolumeData) {
   byte isNew;
-  if (screenID != VOLUME_ID) {
+  if (screenID != VOLUME_SCR_ID) {
     clearPanel();
     isNew = true;
   } else
     isNew = false;
-  screenID = VOLUME_ID;
+  screenID = VOLUME_SCR_ID;
   drawUpDown(mainScreenColor);
   drawIcon(newVolumeData.icon, mainScreenColor);
   drawSources(selectedSource, newVolumeData.cdAvailable);
@@ -388,30 +420,33 @@ typedef struct error_t {
 } error_t;
 
 
-void handleErrorScreen() {
-  handleErrorScreen("Error", ERROR_COLOR);
+bool handleErrorScreen() {
+  return handleErrorScreen("Error", ERROR_COLOR);
 }
 
-void handleInfoScreen() {
-  handleErrorScreen("Info", INFO_COLOR);
+bool handleInfoScreen() {
+  return handleErrorScreen("Info", INFO_COLOR);
 }
 
 
-void handleErrorScreen(char* label, uint16_t color) {
+bool handleErrorScreen(char* label, uint16_t color) {
   error_t errorData;
-  readStruct((char*) &errorData, sizeof(error_t));
-  /*
-    sendLog(label);
-    sendLog(": line1: ");
-    sendLog(errorData.line1);
-    sendLog("\n");
-  */
-  showErrorScreen(errorData, label, color);
+  if (readStruct((char*) &errorData, sizeof(error_t))) {
+    /*
+      sendLog(label);
+      sendLog(": line1: ");
+      sendLog(errorData.line1);
+      sendLog("\n");
+    */
+    showErrorScreen(errorData, label, color);
+    return true;
+  } else
+    return false;
 }
 
 void showErrorScreen(struct error_t errorData, char* label, uint16_t color) {
   clearWholeScreen();
-  screenID = ERROR_ID;
+  screenID = ERROR_SCR_ID;
   tft.setTextColor(color);
   // headline
   tft.drawCentreString(label, WIDTH / 2, 1, 4);
@@ -440,35 +475,38 @@ typedef struct radio_t {
 
 radio_t radioData = {"", "", "", "", NO_ICON, 0};
 
-void handleRadioScreen() {
+bool handleRadioScreen() {
   radio_t newRadioData;
-  readStruct((char*) &newRadioData, sizeof(radio_t));
-  /*
-    Serial.print(OUT_LOG_ID);
-    Serial.print("radiodata: station1: ");
-    Serial.println(newRadioData.station1);
-    Serial.print(OUT_LOG_ID);
-    Serial.print("station2: ");
-    Serial.println(newRadioData.station2);
-    Serial.print(OUT_LOG_ID);
-    Serial.print("title1: ");
-    Serial.println(newRadioData.title1);
-    Serial.print(OUT_LOG_ID);
-    Serial.print("line2: ");
-    Serial.println(newRadioData.title2);
-    Serial.print(OUT_LOG_ID);
-    Serial.print("icon: ");
-    Serial.println(newRadioData.icon);
-    Serial.print(OUT_LOG_ID);
-    Serial.print("cdAvailable: ");
-    Serial.println(newRadioData.cdAvailable);
-  */
-  showRadioScreen(newRadioData);
+  if (readStruct((char*) &newRadioData, sizeof(radio_t))) {
+    /*
+      Serial.print(OUT_LOG_ID);
+      Serial.print("radiodata: station1: ");
+      Serial.println(newRadioData.station1);
+      Serial.print(OUT_LOG_ID);
+      Serial.print("station2: ");
+      Serial.println(newRadioData.station2);
+      Serial.print(OUT_LOG_ID);
+      Serial.print("title1: ");
+      Serial.println(newRadioData.title1);
+      Serial.print(OUT_LOG_ID);
+      Serial.print("line2: ");
+      Serial.println(newRadioData.title2);
+      Serial.print(OUT_LOG_ID);
+      Serial.print("icon: ");
+      Serial.println(newRadioData.icon);
+      Serial.print(OUT_LOG_ID);
+      Serial.print("cdAvailable: ");
+      Serial.println(newRadioData.cdAvailable);
+    */
+    showRadioScreen(newRadioData);
+    return true;
+  } else
+    return false;
 }
 
 void showRadioScreen(struct radio_t newRadioData) {
   byte isNew;
-  if (screenID != RADIO_ID) {
+  if (screenID != RADIO_SCR_ID) {
     clearPanel();
     switchGlobalsToRadio();
     isNew = true;
@@ -523,7 +561,7 @@ void drawRTitle(char * title, byte index, byte posY) {
 }
 
 void switchGlobalsToRadio() {
-  screenID = RADIO_ID;
+  screenID = RADIO_SCR_ID;
   mainScreenColor = RADIO_COLOR;
 }
 
@@ -546,26 +584,29 @@ typedef struct cd_t {
 
 cd_t cdData = {0, 0, NO_ICON};
 
-void handleCDPlayingScreen() {
+bool handleCDPlayingScreen() {
   cd_t newCDData;
-  readStruct((char*) &newCDData, sizeof(cd_t));
-  /*
-    Serial.print(OUT_LOG_ID);
-    Serial.print("CDdata: trackNb: ");
-    Serial.println(newCDData.trackNb);
-    Serial.print(OUT_LOG_ID);
-    Serial.print("tracks: ");
-    Serial.println(newCDData.tracks);
-    Serial.print(OUT_LOG_ID);
-    Serial.print("icon: ");
-    Serial.println(newCDData.icon);
-  */
-  showCDPlayingScreen(newCDData);
+  if (readStruct((char*) &newCDData, sizeof(cd_t))) {
+    /*
+      Serial.print(OUT_LOG_ID);
+      Serial.print("CDdata: trackNb: ");
+      Serial.println(newCDData.trackNb);
+      Serial.print(OUT_LOG_ID);
+      Serial.print("tracks: ");
+      Serial.println(newCDData.tracks);
+      Serial.print(OUT_LOG_ID);
+      Serial.print("icon: ");
+      Serial.println(newCDData.icon);
+    */
+    showCDPlayingScreen(newCDData);
+    return true;
+  } else
+    return false;
 }
 
 void showCDPlayingScreen(struct cd_t newCDData) {
   byte isNew;
-  if (screenID != CD_PLAYING_ID) {
+  if (screenID != CD_PLAYING_SCR_ID) {
     isNew = true;
     clearPanel();
     switchGlobalsToCDPlaying();
@@ -613,7 +654,7 @@ void drawCDValue(byte value, byte x, byte y) {
 
 
 void switchGlobalsToCDPlaying() {
-  screenID = CD_PLAYING_ID;
+  screenID = CD_PLAYING_SCR_ID;
   mainScreenColor = CD_COLOR;
 }
 
@@ -629,20 +670,23 @@ typedef struct cd_info_t {
 cd_info_t cdInfoData = {""};
 
 
-void handleCDInfoScreen() {
+bool handleCDInfoScreen() {
   cd_info_t newCDInfoData;
-  readStruct((char*) &newCDInfoData, sizeof(cd_info_t));
-  /*
-    Serial.print(OUT_LOG_ID);
-    Serial.print("CDInfoData: text: ");
-    Serial.println(newCDInfoData.text);
-  */
-  showCDInfoScreen(newCDInfoData);
+  if (readStruct((char*) &newCDInfoData, sizeof(cd_info_t))) {
+    /*
+      Serial.print(OUT_LOG_ID);
+      Serial.print("CDInfoData: text: ");
+      Serial.println(newCDInfoData.text);
+    */
+    showCDInfoScreen(newCDInfoData);
+    return true;
+  } else
+    return false;
 }
 
 void showCDInfoScreen(struct cd_info_t newCDInfoData) {
   byte isNew;
-  if (screenID != CD_INFO_ID) {
+  if (screenID != CD_INFO_SCR_ID) {
     isNew = true;
     clearPanel();
     switchGlobalsToCDLoading();
@@ -666,7 +710,7 @@ void drawCDInfo(struct cd_info_t newCDInfoData, byte isNew) {
 
 
 void switchGlobalsToCDLoading() {
-  screenID = CD_INFO_ID;
+  screenID = CD_INFO_SCR_ID;
   mainScreenColor = CD_COLOR;
 }
 
@@ -676,41 +720,72 @@ void showInitialScreen() {
   tft.drawCentreString("Starting...", 80, 50, 4);
 }
 
+bool handleCommand(byte commandID) {
+  switch (commandID) {
+    case VOLUME_SCR_ID: return handleVolumeScreen();
+    case RADIO_SCR_ID: return handleRadioScreen();
+    case CD_PLAYING_SCR_ID: return handleCDPlayingScreen();
+    case CD_INFO_SCR_ID: return handleCDInfoScreen();
+    case INFO_SCR_ID: return handleInfoScreen();
+    case ERROR_SCR_ID: return handleErrorScreen();
+    // unknown commandID
+    default: return false;
+  }
+
+}
+
+/**
+ * Called when new serial data available
+ * Does not return until command is fully completed or the message was not received/parsed correctly
+ * return:  FALSE - message corrupted/not recognized correctly
+ *          TRUE - message received correctly, processed
+ */
+bool checkAndHandleMsg() {
+  // incoming data
+  int startFrame = Serial.read();
+  //  sendLog("FRAME_START ASCII:");
+  //  logInt(startFrame);
+  // first byte must be FRAME_START
+  if (startFrame != FRAME_START) {
+    // not frame start, returning
+    return false;
+  }
+  // read START_FRAME, now command ID byte
+  byte commandID;
+  // read with timeout
+  byte readCount = Serial.readBytes(&commandID, 1);
+  if (readCount == 1) {
+    //    sendLog("SCREEN_ID ASCII:");
+    //    logInt(commandID);
+    // did receive one byte within timeout
+    return handleCommand(commandID);
+  } else
+    return false;
+}
+
 /********** MAIN *********/
 void setup(void) {
   tft.init();
   tft.setRotation(3);
   tft.setTextSize(1);
   volumeWaitMillis = millis() + VOLUME_CHECK_PERIOD;  // initial setup
+  controllerRunning = false;
 
   Serial.begin(4800);
+  Serial.setTimeout(SERIAL_TIMEOUT);
   tft.fillScreen(BACKGROUND);
   showInitialScreen();
 }
 
 void loop() {
   if (Serial.available()) {
-    // the controller communicates
-    controllerRunning = true;
-    char readch = Serial.read();
-    switch (readch) {
-      case VOLUME_ID: handleVolumeScreen();
-        break;
-      case RADIO_ID: handleRadioScreen();
-        break;
-      case CD_PLAYING_ID: handleCDPlayingScreen();
-        break;
-      case CD_INFO_ID: handleCDInfoScreen();
-        break;
-      case INFO_ID: handleInfoScreen();
-        break;
-      case ERROR_ID: handleErrorScreen();
-        break;
-
-      default: break;
-    }
+    // incoming data
+    controllerRunning |= checkAndHandleMsg();
   }
+
+  // volume/button info is sent over serial ONLY AFTER the controller shows it is communicating - after having received its first complete command
   if (controllerRunning) {
+    // the controller has sent a complete command correctly - is running
     // sending volume if changed
     checkSendVolume();
     // sending button if newly pressed

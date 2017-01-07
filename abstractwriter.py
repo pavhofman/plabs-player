@@ -1,3 +1,4 @@
+import logging
 from queue import Queue
 from threading import Thread, Event
 
@@ -28,8 +29,8 @@ class AbstractWriter(Thread):
                 self.sendQ.task_done()
 
         except Exception as e:
-            print("error communicating...: ")
-            print(e)
+            logging.error("Error communicating")
+            logging.error(e, exc_info=True)
 
     def handleItem(self, item: Union[str, bytes]):
         """

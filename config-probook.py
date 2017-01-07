@@ -18,9 +18,9 @@ STATE_FILENAME = "radio.state"
 
 IPC_SERVER_OPTION = "--input-ipc-server"
 # older mpv has "volume"
-VOLUME_PROPERTY = "ao-volume"
+VOLUME_PROPERTY = "volume"
 
 
 DST_IFS_DIR = "/tmp/interfaces.d"
 
-USE_SERIAL = False
+USE_SERIAL = True

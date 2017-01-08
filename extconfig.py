@@ -4,7 +4,7 @@ import shutil
 from pathlib import Path
 from subprocess import check_output, CalledProcessError
 
-from config import FLASH_LABEL, PLAYLIST_FILENAME, DST_IFS_DIR
+from config import FLASH_LABEL, PLAYLIST_FILENAME
 
 # path to the interfaces.d dir in on the source partition
 UDISKS_CMD = '/usr/bin/udisks'
@@ -33,13 +33,6 @@ class ExtConfig():
         if self.__playlistPath is None:
             self.__playlistPath = self.__get_path(PLAYLIST_FILENAME)
         return self.__playlistPath
-
-    def copyInterfaces(self):
-        try:
-            dirPath = self.__get_path(SRC_IFS_DIR)
-            self.__copydir(dirPath, DST_IFS_DIR)
-        except Exception as e:
-            logging.warning(e, exc_info=True)
 
     def __copydir(self, source, dest):
         """Copy a directory structure overwriting existing files"""

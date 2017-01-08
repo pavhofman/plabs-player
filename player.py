@@ -79,7 +79,7 @@ class Player(AbstractPlayer):
                     self.__display.showError("Network not configured!")
                     time.sleep(1)
             except Exception as e:
-                logging.error(e)
+                logging.error(e, exc_info=True)
                 raise e
 
     def handleButton(self, button: int):

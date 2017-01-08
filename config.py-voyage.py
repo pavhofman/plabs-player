@@ -21,4 +21,6 @@ VOLUME_PROPERTY = "volume"
 
 DST_IFS_DIR = "/etc/network/interfaces.d"
 
+LOG_FILE = "/var/log/radio.log"
+
 USE_SERIAL = True

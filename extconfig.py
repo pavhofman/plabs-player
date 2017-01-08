@@ -39,7 +39,7 @@ class ExtConfig():
             dirPath = self.__get_path(SRC_IFS_DIR)
             self.__copydir(dirPath, DST_IFS_DIR)
         except Exception as e:
-            pass
+            logging.warning(e, exc_info=True)
 
     def __copydir(self, source, dest):
         """Copy a directory structure overwriting existing files"""

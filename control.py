@@ -14,7 +14,7 @@ import sys
 
 import serial
 
-from config import SERIAL_PORT, BAUDRATE, USE_SERIAL
+from config import SERIAL_PORT, BAUDRATE, USE_SERIAL, LOG_FILE
 from display import Display
 from inputreader import InputReader
 from player import Player
@@ -59,7 +59,7 @@ def exitCleanly(exitValue: int):
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s:%(message)s')
+    logging.basicConfig(filename=LOG_FILE, level=logging.DEBUG, format='%(asctime)s %(levelname)s:%(message)s')
     ser = None
     reader = None
     player = None
@@ -84,5 +84,5 @@ if __name__ == "__main__":
         while True:
             reader.processCommand(player)
     except Exception as e:
-        logging.exception("ending: " + str(e))
+        logging.error(e, exc_info=True)
         exitCleanly(1)

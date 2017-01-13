@@ -780,7 +780,10 @@ void setup(void) {
 void loop() {
   if (Serial.available()) {
     // incoming data
-    controllerRunning |= checkAndHandleMsg();
+    bool receivedOK = checkAndHandleMsg();
+    if (! receivedOK)
+      sendLog("broken msg");
+    controllerRunning |= receivedOK;
   }
 
   // volume/button info is sent over serial ONLY AFTER the controller shows it is communicating - after having received its first complete command

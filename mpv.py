@@ -38,6 +38,9 @@ from queue import Queue, Empty, Full
 
 from config import IPC_SERVER_OPTION, AUDIO_DEV
 
+# The original 5secs increased to allow for slow mpv start after resume
+MPV_TIMEOUT_SECS = 10
+
 
 class MPVError(Exception):
     pass
@@ -489,7 +492,7 @@ class MPV(MPVBase):
     #
     # Public API
     #
-    def command(self, *args, timeout=5):
+    def command(self, *args, timeout=MPV_TIMEOUT_SECS):
         """Execute a single command on the mpv process and return the result.
         """
         return self._send_request({"command": list(args)}, timeout=timeout)

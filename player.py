@@ -17,6 +17,8 @@ from mympv import MyMPV
 from networkinfo import getNetworkInfo
 from statefile import StateFile, DEFAULT_PLIST_POS
 
+CD_READ_TRIES = 20
+
 MPV_VOLUME_THRESHOLD = 20
 
 METADATA_TITLE_FIELD = 'icy-title'
@@ -266,7 +268,7 @@ class Player(AbstractPlayer):
         tracks = None
         trackNb = None
         waitTimer = 0
-        while tracks is None and waitTimer < 20:
+        while tracks is None and waitTimer < CD_READ_TRIES:
             try:
                 tracks = self.__mpv.get_property("chapters")
                 trackNb = self.__mpv.get_property("chapter")
@@ -274,7 +276,8 @@ class Player(AbstractPlayer):
                 # we have to wait a bit
                 waitTimer += 1
                 time.sleep(1)
-        if tracks is None:
+        if (tracks is None) or (trackNb is None):
+            logging.warning("Cannot read CD even after %d tries, no more trying", CD_READ_TRIES)
             raise CDError("cannot read CD")
         else:
             return trackNb, tracks

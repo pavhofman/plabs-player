@@ -77,7 +77,7 @@ class MPVBase:
         # too long cache makes CD drive spin too long
         "--cache-default=1000",
         # trial/error - some CDDA media need this
-        "--cdda-toc-bias=1"
+        "--cdda-toc-bias=1",
         "--audio-device=" + AUDIO_DEV,
         "--no-video"
     ]

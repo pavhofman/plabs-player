@@ -230,10 +230,10 @@ class MPVBase:
         """Return a message dictionary from a json representation.
         """
         # XXX may be strict is too strict ;-)
-        data = self.decodeBytes(data)
+        data = self._decodeBytes(data)
         return json.loads(data)
 
-    def decodeBytes(self, data):
+    def _decodeBytes(self, data):
         # unfortunately some internet streams transmit metadata in various encodings.
         # this is a hook for czech stations
         try:

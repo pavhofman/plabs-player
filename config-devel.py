@@ -24,3 +24,7 @@ DST_IFS_DIR = "/tmp/interfaces.d"
 LOG_FILE = "/tmp/radio.log"
 
 USE_SERIAL = False
+
+# enabling mpv.log file
+MPV_LOG_FILE = "/tmp/mpv.log"
+# MPV_LOG_FILE = None

@@ -24,3 +24,7 @@ DST_IFS_DIR = "/etc/network/interfaces.d"
 LOG_FILE = "/var/log/radio.log"
 
 USE_SERIAL = True
+
+# enabling mpv.log file
+# MPV_LOG_FILE = "/tmp/mpv.log"
+MPV_LOG_FILE = None

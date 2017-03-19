@@ -36,7 +36,7 @@ import threading
 import time
 from queue import Queue, Empty, Full
 
-from config import IPC_SERVER_OPTION, AUDIO_DEV
+from config import IPC_SERVER_OPTION, AUDIO_DEV, MPV_LOG_FILE
 
 # The original 5secs increased to allow for slow mpv start after resume
 MPV_TIMEOUT_SECS = 10
@@ -109,6 +109,8 @@ class MPVBase:
         """
         self.argv = [self.executable]
         self.argv += self.default_argv
+        if MPV_LOG_FILE:
+            self.argv += ["--log-file", MPV_LOG_FILE]
         self.argv += [IPC_SERVER_OPTION, self._sock_filename]
         if self.window_id is not None:
             self.argv += ["--wid", str(self.window_id)]

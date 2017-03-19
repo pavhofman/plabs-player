@@ -224,14 +224,27 @@ class MPVBase:
         """
         # XXX may be strict is too strict ;-)
         data = json.dumps(message, separators=",:")
-        return data.encode("utf8", "strict") + b"\n"
+        return data.encode("utf8", "replace") + b"\n"
 
     def _parse_message(self, data):
         """Return a message dictionary from a json representation.
         """
         # XXX may be strict is too strict ;-)
-        data = data.decode("utf8", "strict")
+        data = self.decodeBytes(data)
         return json.loads(data)
+
+    def decodeBytes(self, data):
+        # unfortunately some internet streams transmit metadata in various encodings.
+        # this is a hook for czech stations
+        try:
+            return data.decode("utf8", "strict")
+        except ValueError:
+            try:
+                # trying czech encoding
+                return data.decode("cp1250", "strict")
+            except ValueError:
+                # fallback to removing the offending characters
+                return data.decode("utf8", "replace")
 
     def _handle_message(self, message):
         """Handle different types of incoming messages, i.e. responses to

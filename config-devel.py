@@ -21,7 +21,8 @@ VOLUME_PROPERTY = "volume"
 
 DST_IFS_DIR = "/tmp/interfaces.d"
 
-LOG_FILE = "/tmp/radio.log"
+# LOG_FILE = "/tmp/radio.log"
+LOG_FILE = None
 
 USE_SERIAL = False
 

@@ -1,45 +1,33 @@
 import logging
 import time
+from itertools import cycle
 
 import pyudev
 from pyudev import Devices
-from pyudev import Monitor
-from pyudev import MonitorObserver
 
 from abstractplayer import AbstractPlayer
 from buttoncommand import SWITCH_BTN, PLAY_PAUSE_BTN, UP_BTN, DOWN_BTN
+from cdsource import CDSource, CD_FILENAME, CD_READ_TRIES, CDError, MEDIA_TRACK_COUNT_AUDIO_UDEV_TAG
 from config import DEV_CDROM
 from display import Display
 from extconfig import ExtConfig
 from mixer import Mixer
 from mpv import MPVCommandError
+from mpvsource import MPV_VOLUME_THRESHOLD, METADATA_NAME_FIELD, METADATA_TITLE_FIELD
 from mympv import MyMPV
 from networkinfo import getNetworkInfo
+from radiosource import RadioSource
 from statefile import StateFile, DEFAULT_PLIST_POS
-
-CD_READ_TRIES = 20
-
-MPV_VOLUME_THRESHOLD = 20
-
-METADATA_TITLE_FIELD = 'icy-title'
-METADATA_NAME_FIELD = 'icy-name'
-
-MEDIA_TRACK_COUNT_AUDIO_UDEV_TAG = 'ID_CDROM_MEDIA_TRACK_COUNT_AUDIO'
-DISK_EJECT_REQUEST_UDEV_TAG = 'DISK_EJECT_REQUEST'
 
 CD_MODE = 1
 RADIO_MODE = 2
-CD_FILENAME = "cdda://"
-
-
-class CDError(Exception):
-    pass
 
 
 class Player(AbstractPlayer):
     # current mode of the player
     __mode = None
     __mpv = None
+    __selectedSource = None
 
     # current playlist position
     # cannot be read from the playlist_pos property as not-working streams cause mpv
@@ -56,12 +44,16 @@ class Player(AbstractPlayer):
         self.__display = display
         self.__showInitInfo()
         self.__cdIsOver = False
-
+        self.__mpv = MyMPV(self)
         self.__extConfig = self.__initExtConfig()
-        self.__registerUdevCallback()
         # initial mute - arduino will send proper volumecommand
-        self.__switchToRadio()
+        # self.__switchToRadio()
+        radioSource = RadioSource(display, self.__extConfig, self.__stateFile, self.__mixer, self.__mpv, self)
         self.__doSetVolume(0)
+        cdSource = CDSource(display, self.__extConfig, self.__stateFile, self.__mixer, self.__mpv, self)
+        self.__sources = [radioSource, cdSource]
+        self.__ringSources = cycle(self.__sources)
+        self.switch()
 
     def __showInitInfo(self):
         while True:
@@ -95,8 +87,8 @@ class Player(AbstractPlayer):
             self.prev()
 
     def setVolume(self, volume: int):
-        self.__doSetVolume(volume)
-        self.__display.showVolume(volume)
+        if (self.__selectedSource is not None):
+            self.__selectedSource.setVolume(volume)
 
     def __doSetVolume(self, volume):
         self.__mixer.setVolume(volume)
@@ -120,19 +112,6 @@ class Player(AbstractPlayer):
             time.sleep(2)
             # finishing
             raise e
-
-    def __registerUdevCallback(self):
-        context = pyudev.Context()
-        monitor = Monitor.from_netlink(context)
-        monitor.filter_by(subsystem='block')
-        observer = MonitorObserver(monitor, callback=self.__checkUdevEvent, name='monitor-observer')
-        observer.start()
-
-    def __checkUdevEvent(self, device: dict):
-        if DISK_EJECT_REQUEST_UDEV_TAG in device:
-            self.__cdWasRemoved()
-        elif MEDIA_TRACK_COUNT_AUDIO_UDEV_TAG in device:
-            self.__cdWasInserted()
 
     def __restartMPV(self):
         if self.__mpv is not None:
@@ -160,15 +139,17 @@ class Player(AbstractPlayer):
             self.__display.showScreen()
 
     def switch(self):
-        if self.__mode == RADIO_MODE:
-            if self.__isCDInserted():
-                # we can switch to CD
-                try:
-                    self.__switchToCD()
-                except CDError:
-                    self.__switchToRadio()
-        else:
-            self.__switchToRadio()
+        nextAvailableSource = None
+        for i in range(0, len(self.__sources)):
+            source = next(self.__ringSources)
+            if (source.isAvailable()):
+                nextAvailableSource = source
+                break
+        if (nextAvailableSource is not None):
+            if self.__selectedSource is not None:
+                self.__selectedSource.deactivate()
+            self.__selectedSource = nextAvailableSource
+            nextAvailableSource.activate()
 
     def __switchToCD(self):
         if self.__isCDInserted():
@@ -211,58 +192,20 @@ class Player(AbstractPlayer):
         self.__display.showScreen()
 
     def togglePause(self):
-        status = self.__isPaused()
-        if status is True:
-            self.__mpv.play()
-        else:
-            self.__mpv.pause()
-            # display is updated via event pause_changed
+        if (self.__selectedSource is not None):
+            self.__selectedSource.togglePause()
 
     def __isPaused(self) -> bool:
         status = self.__mpv.get_property("pause")
         return status
 
     def next(self):
-        if self.__mode == CD_MODE:
-            try:
-                self.__nextCDTrack()
-            except CDError:
-                self.__switchToRadio()
-        else:
-            self.__nextRadioStream()
+        if (self.__selectedSource is not None):
+            self.__selectedSource.next()
 
     def prev(self):
-        if self.__mode == CD_MODE:
-            try:
-                self.__prevCDTrack()
-            except CDError:
-                self.__switchToRadio()
-        else:
-            self.__prevRadioStream()
-
-    def __nextCDTrack(self):
-        if self.__cdIsOver:
-            self.__mpv.command("loadfile", CD_FILENAME)
-        else:
-            trackNb, tracks = self.__readCDFromMPV()
-            if trackNb < (tracks - 1):
-                trackNb += 1
-            else:
-                # rollover
-                trackNb = 0
-            self.__mpv.set_property("chapter", trackNb)
-
-    def __prevCDTrack(self):
-        if self.__cdIsOver:
-            self.__mpv.command("loadfile", CD_FILENAME)
-        else:
-            trackNb, tracks = self.__readCDFromMPV()
-            if trackNb > 0:
-                trackNb -= 1
-            else:
-                # rollover
-                trackNb = tracks - 1
-            self.__mpv.set_property("chapter", trackNb)
+        if (self.__selectedSource is not None):
+            self.__selectedSource.prev()
 
     def __readCDFromMPV(self) -> (int, int):
         tracks = None
@@ -289,24 +232,6 @@ class Player(AbstractPlayer):
     def __getPlaylistCount(self):
         positions = self.__mpv.get_property("playlist-count")
         return positions
-
-    def __nextRadioStream(self):
-        count = self.__getPlaylistCount()
-        if self.__plistPos < (count - 1):
-            self.__plistPos += 1
-        else:
-            # rollover
-            self.__plistPos = 0
-        self.__setPlaylistPosition(self.__plistPos)
-
-    def __prevRadioStream(self):
-        positions = self.__getPlaylistCount()
-        if self.__plistPos > 0:
-            self.__plistPos -= 1
-        else:
-            # rollover
-            self.__plistPos = positions - 1
-        self.__setPlaylistPosition(self.__plistPos)
 
     def chapterWasChanged(self, chapter: str):
         if chapter is None or chapter >= 0:

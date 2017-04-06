@@ -3,29 +3,31 @@ from statefile import DEFAULT_PLIST_POS
 
 
 class RadioSource(MPVSource):
-    def activate(self) -> None:
-        self.__display.setRadioScreen()
-        self.__restartMPV()
-        self.__mpv.command("loadlist", self.__extConfig.getPlaylistPath())
+    def _displaySelf(self) -> None:
+        self._display.setRadioScreen()
+
+    def _startPlaying(self) -> None:
+        self._restartMPV()
+        self._mpv.command("loadlist", self._extConfig.getPlaylistPath())
         self.__setStoredPlistPos()
-        self.__mpv.play()
+        self._mpv.play()
 
     def __setStoredPlistPos(self):
         self.__plistPos = self.__getStoredPlistPos()
         self.__setPlaylistPosition(self.__plistPos)
 
     def __getStoredPlistPos(self):
-        plistPos = self.__stateFile.getPlistPos()
+        plistPos = self._stateFile.getPlistPos()
         if (plistPos > self.__getPlaylistCount() - 1):
             plistPos = DEFAULT_PLIST_POS
         return plistPos
 
     def __setPlaylistPosition(self, plistPos):
-        self.__mpv.set_property("playlist-pos", plistPos)
-        self.__stateFile.storePlistPos(plistPos)
+        self._mpv.set_property("playlist-pos", plistPos)
+        self._stateFile.storePlistPos(plistPos)
 
     def __getPlaylistCount(self):
-        positions = self.__mpv.get_property("playlist-count")
+        positions = self._mpv.get_property("playlist-count")
         return positions
 
     def next(self) -> None:
@@ -51,3 +53,6 @@ class RadioSource(MPVSource):
 
     def prev(self) -> None:
         self.__prevRadioStream()
+
+    def isAvailable(self) -> bool:
+        return True

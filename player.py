@@ -40,6 +40,8 @@ class Player(AbstractPlayer):
     # -------------------------------------------------------------------------
     def __init__(self, display: Display):
         self.__mixer = Mixer()
+        # precaution initial muting
+        self.__mixer.mute()
         self.__stateFile = StateFile()
         self.__display = display
         self.__showInitInfo()
@@ -49,7 +51,6 @@ class Player(AbstractPlayer):
         # initial mute - arduino will send proper volumecommand
         # self.__switchToRadio()
         radioSource = RadioSource(display, self.__extConfig, self.__stateFile, self.__mixer, self.__mpv, self)
-        self.__doSetVolume(0)
         cdSource = CDSource(display, self.__extConfig, self.__stateFile, self.__mixer, self.__mpv, self)
         self.__sources = [radioSource, cdSource]
         self.__ringSources = cycle(self.__sources)

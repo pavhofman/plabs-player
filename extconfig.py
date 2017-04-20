@@ -72,7 +72,7 @@ class ExtConfig():
             check_output([UDISKS_CMD, '--unmount', partition])
         except Exception as e:
             logging.exception(e)
-            raise ExtConfigError("Unable to unmount " + partition)
+            raise ExtConfigError("Unable to unmount " + partition + ": " + str(e))
 
     def __get_path(self, name: str) -> str:
         path = os.path.join(self.__mountpoint, name)

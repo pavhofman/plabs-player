@@ -1,12 +1,11 @@
 from display import Display
 from extconfig import ExtConfig
 from mixer import Mixer
-from player import Player
 from statefile import StateFile
 
 
 class Source():
-    def __init__(self, display: Display, extConfig: ExtConfig, stateFile: StateFile, mixer: Mixer, player: Player):
+    def __init__(self, display: Display, extConfig: ExtConfig, stateFile: StateFile, mixer: Mixer, player):
         self._display = display
         self._extConfig = extConfig
         self._stateFile = stateFile

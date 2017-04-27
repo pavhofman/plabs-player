@@ -1,7 +1,6 @@
 from display import Display
 from extconfig import ExtConfig
 from mixer import Mixer
-from mympv import MyMPV
 from source import Source
 from statefile import StateFile
 
@@ -11,28 +10,21 @@ METADATA_TITLE_FIELD = 'icy-title'
 
 
 class MPVSource(Source):
-    _mpv = None
-
-    def __init__(self, display: Display, extConfig: ExtConfig, stateFile: StateFile, mixer: Mixer, mpv: MyMPV, player):
+    def __init__(self, display: Display, extConfig: ExtConfig, stateFile: StateFile, mixer: Mixer, player):
         super().__init__(display, extConfig, stateFile, mixer, player)
-        self._mpv = mpv
 
     def togglePause(self):
         status = self.__isPaused()
         if status is True:
-            self._mpv.play()
+            self._player.getMPV().play()
         else:
-            self._mpv.pause()
+            self._player.getMPV().pause()
             # display is updated via event pause_changed
 
     def __isPaused(self) -> bool:
-        status = self._mpv.get_property("pause")
+        status = self._player.getMPV().get_property("pause")
         return status
 
-    def _restartMPV(self):
-        if self._mpv is not None:
-            self._mpv.close()
-        self._mpv = MyMPV(self)
 
     def _doSetVolume(self, volume) -> None:
         self.__setMPVVolume(volume)
@@ -41,10 +33,10 @@ class MPVSource(Source):
     def __setMPVVolume(self, volume):
         if volume < MPV_VOLUME_THRESHOLD:
             mpvVolume = volume * (100 / MPV_VOLUME_THRESHOLD)
-            self._mpv.setVolume(mpvVolume)
+            self._player.getMPV().setVolume(mpvVolume)
         else:
             # full volume
-            self._mpv.setVolume(100)
+            self._player.getMPV().setVolume(100)
 
     def metadata_changed(self, metadata: dict):
         if metadata is not None:

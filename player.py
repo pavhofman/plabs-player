@@ -11,10 +11,8 @@ from mixer import Mixer
 from mympv import MyMPV
 from networkinfo import getNetworkInfo, NetworkInfo
 from radiosource import RadioSource
+from source import Source
 from statefile import StateFile
-
-CD_MODE = 1
-RADIO_MODE = 2
 
 
 class Player(AbstractPlayer):
@@ -44,8 +42,8 @@ class Player(AbstractPlayer):
         self.__extConfig = self.__initExtConfig()
         # initial mute - arduino will send proper volumecommand
         # self.__switchToRadio()
-        radioSource = RadioSource(display, self.__extConfig, self.__stateFile, self.__mixer, self.__mpv, self)
-        cdSource = CDSource(display, self.__extConfig, self.__stateFile, self.__mixer, self.__mpv, self)
+        radioSource = RadioSource(display, self.__extConfig, self.__stateFile, self.__mixer, self)
+        cdSource = CDSource(display, self.__extConfig, self.__stateFile, self.__mixer, self)
         self.__sources = [radioSource, cdSource]
         self.__ringSources = cycle(self.__sources)
         self.switch()
@@ -134,3 +132,14 @@ class Player(AbstractPlayer):
         self.__mpv.close()
         self.__display.close()
         self.__extConfig.close()
+
+    def getMPV(self) -> MyMPV:
+        return self.__mpv
+
+    def restartMPV(self):
+        if self.__mpv is not None:
+            self.__mpv.close()
+        self.__mpv = MyMPV(self)
+
+    def getSelectedSource(self) -> Source:
+        return self.__selectedSource

@@ -12,13 +12,12 @@ from display import Display
 from extconfig import ExtConfig
 from mpv import MPVCommandError
 from mpvsource import MPVSource
-from mympv import MyMPV
 from statefile import StateFile
 
 
 class CDSource(MPVSource):
-    def __init__(self, display: Display, extConfig: ExtConfig, stateFile: StateFile, mixer: Mixer, mpv: MyMPV, player):
-        super().__init__(display, extConfig, stateFile, mixer, mpv, player)
+    def __init__(self, display: Display, extConfig: ExtConfig, stateFile: StateFile, mixer: Mixer, player):
+        super().__init__(display, extConfig, stateFile, mixer, player)
         self._cdIsInserted = self.__isCDInserted()
         self.__registerUdevCallback()
 
@@ -49,15 +48,16 @@ class CDSource(MPVSource):
 
     def _startPlaying(self) -> None:
         self.__cdIsOver = False
-        self._restartMPV()
-        self._mpv.command("loadfile", CD_FILENAME)
+        self._player.restartMPV()
+        mpv = self._player.getMPV()
+        mpv.command("loadfile", CD_FILENAME)
 
     def next(self) -> None:
         self.__nextCDTrack()
 
     def __nextCDTrack(self):
         if self.__cdIsOver:
-            self._mpv.command("loadfile", CD_FILENAME)
+            self._player.getMPV().command("loadfile", CD_FILENAME)
         else:
             trackNb, tracks = self.__readCDFromMPV()
             if trackNb < (tracks - 1):
@@ -65,7 +65,7 @@ class CDSource(MPVSource):
             else:
                 # rollover
                 trackNb = 0
-            self._mpv.set_property("chapter", trackNb)
+            self._player.getMPV().set_property("chapter", trackNb)
 
     def __readCDFromMPV(self) -> (int, int):
         tracks = None
@@ -73,8 +73,8 @@ class CDSource(MPVSource):
         waitTimer = 0
         while tracks is None and waitTimer < CD_READ_TRIES:
             try:
-                tracks = self._mpv.get_property("chapters")
-                trackNb = self._mpv.get_property("chapter")
+                tracks = self._player.getMPV().get_property("chapters")
+                trackNb = self._player.getMPV().get_property("chapter")
             except MPVCommandError:
                 # we have to wait a bit
                 waitTimer += 1
@@ -90,7 +90,7 @@ class CDSource(MPVSource):
 
     def __prevCDTrack(self):
         if self.__cdIsOver:
-            self._mpv.command("loadfile", CD_FILENAME)
+            self._player.getMPV().command("loadfile", CD_FILENAME)
         else:
             trackNb, tracks = self.__readCDFromMPV()
             if trackNb > 0:
@@ -98,7 +98,7 @@ class CDSource(MPVSource):
             else:
                 # rollover
                 trackNb = tracks - 1
-            self._mpv.set_property("chapter", trackNb)
+            self._player.getMPV().set_property("chapter", trackNb)
 
     @staticmethod
     def __isCDInserted() -> bool:

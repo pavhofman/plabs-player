@@ -10,11 +10,11 @@ class MyMPV(MPV):
     # The mpv process and the communication code run in their own thread
     # context. This results in the callback methods below being run in that
     # thread as well.
-    def __init__(self, source):
+    def __init__(self, player):
         # Pass a window id to embed mpv into that window. Change debug to True
         # to see the json communication.
         super().__init__(window_id=None, debug=False)
-        self.__source = source
+        self.__player = player
 
     # -------------------------------------------------------------------------
     # Callbacks
@@ -24,13 +24,16 @@ class MyMPV(MPV):
     # "time-pos" -> on_property_time_pos().
 
     def on_property_chapter(self, chapter=None):
-        self.__source.chapterWasChanged(chapter)
+        source = self.__player.getSelectedSource()
+        source.chapterWasChanged(chapter)
 
     def on_property_metadata(self, metadata=None):
-        self.__source.metadata_changed(metadata)
+        source = self.__player.getSelectedSource()
+        source.metadata_changed(metadata)
 
     def on_property_pause(self, pause=None):
-        self.__source.pause_changed(pause)
+        source = self.__player.getSelectedSource()
+        source.pause_changed(pause)
 
     # -------------------------------------------------------------------------
     # Commands

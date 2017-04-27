@@ -7,10 +7,10 @@ class RadioSource(MPVSource):
         self._display.setRadioScreen()
 
     def _startPlaying(self) -> None:
-        self._restartMPV()
-        self._mpv.command("loadlist", self._extConfig.getPlaylistPath())
-        self.__setStoredPlistPos()
-        self._mpv.play()
+        self._player.restartMPV()
+        mpv = self._player.getMPV()
+        mpv.command("loadlist", self._extConfig.getPlaylistPath())
+        mpv.play()
 
     def __setStoredPlistPos(self):
         self.__plistPos = self.__getStoredPlistPos()
@@ -23,11 +23,11 @@ class RadioSource(MPVSource):
         return plistPos
 
     def __setPlaylistPosition(self, plistPos):
-        self._mpv.set_property("playlist-pos", plistPos)
+        self._player.getMPV().set_property("playlist-pos", plistPos)
         self._stateFile.storePlistPos(plistPos)
 
     def __getPlaylistCount(self):
-        positions = self._mpv.get_property("playlist-count")
+        positions = self._player.getMPV().get_property("playlist-count")
         return positions
 
     def next(self) -> None:

@@ -17,10 +17,10 @@ class Source():
         raise NotImplementedError()
 
     def next(self) -> None:
-        raise NotImplementedError()
+        pass
 
     def prev(self) -> None:
-        raise NotImplementedError()
+        pass
 
     def isAvailable(self) -> bool:
         raise NotImplementedError()
@@ -57,7 +57,10 @@ class Source():
             self._display.showScreen()
 
     def chapterWasChanged(self, chapter: str):
-        raise NotImplementedError()
+        pass
 
     def _stopPlaying(self):
+        pass
+
+    def metadata_changed(self, metadata: dict):
         pass

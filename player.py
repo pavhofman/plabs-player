@@ -7,6 +7,7 @@ from buttoncommand import SWITCH_BTN, PLAY_PAUSE_BTN, UP_BTN, DOWN_BTN
 from cdsource import CDSource
 from display import Display
 from extconfig import ExtConfig
+from flashsource import FlashSource
 from mixer import Mixer
 from mympv import MyMPV
 from networkinfo import getNetworkInfo, NetworkInfo
@@ -44,7 +45,8 @@ class Player(AbstractPlayer):
         # self.__switchToRadio()
         radioSource = RadioSource(display, self.__extConfig, self.__stateFile, self.__mixer, self)
         cdSource = CDSource(display, self.__extConfig, self.__stateFile, self.__mixer, self)
-        self.__sources = [radioSource, cdSource]
+        flashSource = FlashSource(display, self.__extConfig, self.__stateFile, self.__mixer, self)
+        self.__sources = [radioSource, cdSource, flashSource]
         self.__ringSources = cycle(self.__sources)
         self.switch()
 

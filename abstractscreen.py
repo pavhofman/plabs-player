@@ -4,12 +4,16 @@ from collections import deque
 import jsonpickle
 from unidecode import unidecode
 
+import globalvariables
+
 FONT2_MAXCHARS = 20
 FONT2_MAXLINES = 3
 
 FONT4_MAXCHARS = 12
 
+# to play, i.e. showing when paused
 PLAY_ICON = 1
+# to pause, i.e. showing when playing
 PAUSE_ICON = 2
 
 
@@ -20,17 +24,6 @@ def chunkstring(string: str, length):
 class AbstractScreen:
     def __init__(self, id: int):
         self.id = id
-        self.icon = 0
-        self.cdAvailable = False
-
-    def setIsPlaying(self, isPlaying: bool):
-        if isPlaying:
-            self.icon = PAUSE_ICON
-        else:
-            self.icon = PLAY_ICON
-
-    def setCDAvailable(self, cdAvailable: bool):
-        self.cdAvailable = cdAvailable
 
     def setTracks(self, tracks: int):
         raise NotImplementedError()
@@ -51,8 +44,9 @@ class AbstractScreen:
         raise NotImplementedError()
 
     def copyFrom(self, screen: 'AbstractScreen'):
-        self.icon = screen.icon
-        self.cdAvailable = screen.cdAvailable
+        # self.icon = screen.icon
+        # self.cdAvailable = screen.cdAvailable
+        pass
 
     def _setLines(self, msg: str, lines: deque, maxChars: int, maxLines: int):
         # replacing utf-8 chars with ascii
@@ -73,5 +67,18 @@ class AbstractScreen:
 
     def toString(self) -> str:
         jsonStr = jsonpickle.encode(self)
-        return jsonStr
+        return jsonStr + "CD : " + str(self.isCDAvailable()) + " ICON: " + str(self.getIconCode())
         # return json.dumps(json.loads(jsonStr), sort_keys=True, indent=4)
+
+    def getIconCode(self) -> int:
+        if globalvariables.player is None:
+            return PLAY_ICON
+        if globalvariables.player.isPaused():
+            return PLAY_ICON
+        else:
+            return PAUSE_ICON
+
+    def isCDAvailable(self) -> bool:
+        if globalvariables.player is None:
+            return False
+        return globalvariables.player.isCDInserted()

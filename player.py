@@ -7,7 +7,6 @@ from buttoncommand import SWITCH_BTN, PLAY_PAUSE_BTN, UP_BTN, DOWN_BTN
 from cdsource import CDSource
 from display import Display
 from extconfig import ExtConfig
-from flashsource import FlashSource
 from mixer import Mixer
 from mympv import MyMPV
 from networkinfo import getNetworkInfo, NetworkInfo
@@ -17,16 +16,6 @@ from statefile import StateFile
 
 
 class Player(AbstractPlayer):
-    # current mode of the player
-    __mode = None
-    __mpv = None
-    __selectedSource = None
-
-    # current playlist position
-    # cannot be read from the playlist_pos property as not-working streams cause mpv
-    # fall back to the previous position automatically,
-    # making thus the faulty stream unskippable
-    __plistPos = 0
 
     # -------------------------------------------------------------------------
     # Initialization.
@@ -40,13 +29,15 @@ class Player(AbstractPlayer):
         self.__showInitInfo()
         self.__cdIsOver = False
         self.__mpv = MyMPV(self)
+        self.__selectedSource = None
         self.__extConfig = self.__initExtConfig()
+        # initial mute - arduino will send proper volumecommand
         # initial mute - arduino will send proper volumecommand
         # self.__switchToRadio()
         radioSource = RadioSource(display, self.__extConfig, self.__stateFile, self.__mixer, self)
-        cdSource = CDSource(display, self.__extConfig, self.__stateFile, self.__mixer, self)
-        flashSource = FlashSource(display, self.__extConfig, self.__stateFile, self.__mixer, self)
-        self.__sources = [radioSource, cdSource, flashSource]
+        self.__cdSource = CDSource(display, self.__extConfig, self.__stateFile, self.__mixer, self)
+        # flashSource = FlashSource(display, self.__extConfig, self.__stateFile, self.__mixer, self)
+        self.__sources = [radioSource, self.__cdSource]
         self.__ringSources = cycle(self.__sources)
         self.switch()
 
@@ -145,3 +136,12 @@ class Player(AbstractPlayer):
 
     def getSelectedSource(self) -> Source:
         return self.__selectedSource
+
+    def isPaused(self) -> bool:
+        if self.__selectedSource is not None:
+            return self.__selectedSource.isPaused()
+        else:
+            return True
+
+    def isCDInserted(self) -> bool:
+        return self.__cdSource.isCDInserted()

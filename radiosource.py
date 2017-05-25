@@ -1,8 +1,15 @@
+from display import Display
+from extconfig import ExtConfig
+from mixer import Mixer
 from mpvsource import MPVSource
-from statefile import DEFAULT_PLIST_POS
+from statefile import DEFAULT_PLIST_POS, StateFile
 
 
 class RadioSource(MPVSource):
+    def __init__(self, display: Display, extConfig: ExtConfig, stateFile: StateFile, mixer: Mixer, player):
+        super().__init__(display, extConfig, stateFile, mixer, player)
+        self.__plistPos = stateFile.getPlistPos()
+
     def _displaySelf(self) -> None:
         self._display.setRadioScreen()
 

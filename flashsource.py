@@ -11,7 +11,7 @@ class FlashSource(MPVSource):
         mpv.play()
 
     def _displaySelf(self) -> None:
-        self._display.showCDInfo("Playing file")
+        self._display.showInfo("Playing file")
 
     def isAvailable(self) -> bool:
         return True

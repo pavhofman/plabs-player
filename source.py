@@ -38,8 +38,8 @@ class Source():
 
     def activate(self) -> None:
         self._isActive = True
-        self._displaySelf()
         self._startPlaying()
+        self._displaySelf()
 
     def deactivate(self) -> None:
         self._stopPlaying()
@@ -53,7 +53,6 @@ class Source():
 
     def pause_changed(self, pause: bool):
         if pause is not None:
-            self._display.getScreen().setIsPlaying(not pause)
             self._display.showScreen()
 
     def chapterWasChanged(self, chapter: str):
@@ -64,3 +63,6 @@ class Source():
 
     def metadata_changed(self, metadata: dict):
         pass
+
+    def isPaused(self):
+        raise NotImplementedError()

@@ -16,4 +16,4 @@ class VolumeScreen(AbstractScreen):
         self.volume = volume
 
     def getSerialMsg(self) -> bytes:
-        return pack(FMT, self.id, self.volume, self.icon, self.cdAvailable)
+        return pack(FMT, self.id, self.volume, self.getIconCode(), self.isCDAvailable())

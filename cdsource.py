@@ -101,7 +101,7 @@ class CDSource(MPVSource):
             self._player.getMPV().set_property("chapter", trackNb)
 
     @staticmethod
-    def __isCDInserted() -> bool:
+    def isCDInserted() -> bool:
         # using another udev context - running in a different thread
         try:
             context = pyudev.Context()
@@ -136,9 +136,12 @@ class CDSource(MPVSource):
         self._cdIsInserted = False
         if self._isActive:
             self._player.switch()
+        else:
+            self._display.showScreen()
 
     def __cdWasInserted(self):
         self._cdIsInserted = True
+        self._display.showScreen()
 
 
 CD_FILENAME = "cdda://"

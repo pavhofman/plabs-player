@@ -14,6 +14,7 @@ import sys
 
 import serial
 
+import globalvariables
 from config import SERIAL_PORT, BAUDRATE, USE_SERIAL, LOG_FILE
 from display import Display
 from inputreader import InputReader
@@ -47,6 +48,7 @@ def exitHandler(signum, frame):
 
 
 def exitCleanly(exitValue: int):
+    global player
     if player is not None:
         player.close()
     if reader is not None:
@@ -62,9 +64,9 @@ if __name__ == "__main__":
     logging.basicConfig(filename=LOG_FILE, level=logging.DEBUG, format='%(asctime)s %(levelname)s:%(message)s')
     ser = None
     reader = None
-    player = None
     signal.signal(signal.SIGINT, exitHandler)
     signal.signal(signal.SIGTERM, exitHandler)
+    global player
     try:
         reader = None
         display = None
@@ -79,10 +81,11 @@ if __name__ == "__main__":
 
         reader.start()
         # Open the video player and load a file.
-        player = Player(display)
+        globalvariables.player = Player(display)
 
         while True:
-            reader.processCommand(player)
+            global player
+            reader.processCommand(globalvariables.player)
     except Exception as e:
         logging.error(e, exc_info=True)
         exitCleanly(1)

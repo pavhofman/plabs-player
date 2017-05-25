@@ -14,14 +14,14 @@ class MPVSource(Source):
         super().__init__(display, extConfig, stateFile, mixer, player)
 
     def togglePause(self):
-        status = self.__isPaused()
+        status = self.isPaused()
         if status is True:
             self._player.getMPV().play()
         else:
             self._player.getMPV().pause()
             # display is updated via event pause_changed
 
-    def __isPaused(self) -> bool:
+    def isPaused(self) -> bool:
         status = self._player.getMPV().get_property("pause")
         return status
 
@@ -51,3 +51,4 @@ class MPVSource(Source):
                 changed = True
             if changed:
                 self._display.showScreen()
+

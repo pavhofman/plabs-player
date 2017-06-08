@@ -1,3 +1,4 @@
+from buttoncommand import B2, B3, B4
 from display import Display
 from extconfig import ExtConfig
 from mixer import Mixer
@@ -66,3 +67,11 @@ class Source():
 
     def isPaused(self):
         raise NotImplementedError()
+
+    def handleButton(self, button: int):
+        if button == B2:
+            self.togglePause()
+        elif button == B3:
+            self.next()
+        elif button == B4:
+            self.prev()

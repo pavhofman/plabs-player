@@ -3,7 +3,7 @@ import time
 from itertools import cycle
 
 from abstractplayer import AbstractPlayer
-from buttoncommand import SWITCH_BTN, PLAY_PAUSE_BTN, UP_BTN, DOWN_BTN
+from buttoncommand import SWITCH_BTN
 from cdsource import CDSource
 from display import Display
 from extconfig import ExtConfig
@@ -67,12 +67,9 @@ class Player(AbstractPlayer):
     def handleButton(self, button: int):
         if button == SWITCH_BTN:
             self.switch()
-        elif button == PLAY_PAUSE_BTN:
-            self.togglePause()
-        elif button == UP_BTN:
-            self.next()
-        elif button == DOWN_BTN:
-            self.prev()
+        else:
+            if (self.__selectedSource is not None):
+                self.__selectedSource.handleButton(button)
 
     def setVolume(self, volume: int):
         if (self.__selectedSource is not None):
@@ -107,18 +104,6 @@ class Player(AbstractPlayer):
         self.__selectedSource = source
         source.activate()
 
-    def togglePause(self):
-        if (self.__selectedSource is not None):
-            self.__selectedSource.togglePause()
-
-    def next(self):
-        if (self.__selectedSource is not None):
-            self.__selectedSource.next()
-
-    def prev(self):
-        if (self.__selectedSource is not None):
-            self.__selectedSource.prev()
-
     def close(self):
         self.__display.showInfo("The control software is shut down")
         self.__mixer.mute()
@@ -145,3 +130,4 @@ class Player(AbstractPlayer):
 
     def isCDInserted(self) -> bool:
         return self.__cdSource.isCDInserted()
+

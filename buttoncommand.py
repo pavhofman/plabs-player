@@ -3,9 +3,9 @@ from abstractplayer import AbstractPlayer
 
 # defined in arduino!
 SWITCH_BTN = 1
-PLAY_PAUSE_BTN = 2
-UP_BTN = 3
-DOWN_BTN = 4
+B2 = 2
+B3 = 3
+B4 = 4
 
 
 class ButtonCommand(AbstractCommand):

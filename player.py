@@ -3,7 +3,7 @@ import time
 from itertools import cycle
 
 from abstractplayer import AbstractPlayer
-from buttoncommand import SWITCH_BTN
+from buttoncommand import B1, B5
 from cdsource import CDSource
 from display import Display
 from extconfig import ExtConfig
@@ -65,7 +65,7 @@ class Player(AbstractPlayer):
         return msg
 
     def handleButton(self, button: int):
-        if button == SWITCH_BTN:
+        if button == B1 or button == B5:
             self.switch()
         else:
             if (self.__selectedSource is not None):

@@ -46,7 +46,7 @@ class CDSource(MPVSource):
     def _displaySelf(self) -> None:
         self._display.showCDInfo("Reading CD")
 
-    def _startPlaying(self) -> None:
+    def _start(self) -> None:
         self.__cdIsOver = False
         self._player.restartMPV()
         mpv = self._player.getMPV()

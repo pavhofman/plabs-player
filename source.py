@@ -39,7 +39,7 @@ class Source():
 
     def activate(self) -> None:
         self._isActive = True
-        self._startPlaying()
+        self._start()
         self._displaySelf()
 
     def deactivate(self) -> None:
@@ -49,7 +49,7 @@ class Source():
     def _displaySelf(self):
         raise NotImplementedError()
 
-    def _startPlaying(self):
+    def _start(self):
         raise NotImplementedError()
 
     def pause_changed(self, pause: bool):

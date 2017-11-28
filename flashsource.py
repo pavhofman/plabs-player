@@ -4,7 +4,7 @@ FILE = '/home/kluci/zvuk.wav'
 
 
 class FlashSource(MPVSource):
-    def _startPlaying(self) -> None:
+    def _start(self) -> None:
         self._player.restartMPV()
         mpv = self._player.getMPV()
         mpv.command("loadfile", FILE)

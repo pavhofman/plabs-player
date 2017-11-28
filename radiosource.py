@@ -13,7 +13,7 @@ class RadioSource(MPVSource):
     def _displaySelf(self) -> None:
         self._display.setRadioScreen()
 
-    def _startPlaying(self) -> None:
+    def _start(self) -> None:
         self._player.restartMPV()
         mpv = self._player.getMPV()
         mpv.command("loadlist", self._extConfig.getPlaylistPath())

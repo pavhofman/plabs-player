@@ -25,6 +25,8 @@ class MPVSource(Source):
         status = self._player.getMPV().get_property("pause")
         return status
 
+    def _stopPlaying(self):
+        self._player.getMPV().command("stop")
 
     def _doSetVolume(self, volume) -> None:
         self.__setMPVVolume(volume)
